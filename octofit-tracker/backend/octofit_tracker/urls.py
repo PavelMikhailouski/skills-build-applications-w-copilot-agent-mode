@@ -19,11 +19,14 @@ from django.urls import path, include
 from rest_framework import routers
 from . import views
 
-codespace_name = os.environ.get('CODESPACE_NAME')
-if codespace_name:
-    base_url = f"https://{codespace_name}-8000.app.github.dev"
-else:
-    base_url = "http://localhost:8000"
+
+# Helper to get the base URL for API documentation or discovery
+def get_base_url():
+    codespace_name = os.environ.get('CODESPACE_NAME')
+    if codespace_name:
+        return f"https://{codespace_name}-8000.app.github.dev"
+    return "http://localhost:8000"
+
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet, basename='user')
@@ -32,9 +35,22 @@ router.register(r'activities', views.ActivityViewSet, basename='activity')
 router.register(r'workouts', views.WorkoutViewSet, basename='workout')
 router.register(r'leaderboards', views.LeaderboardViewSet, basename='leaderboard')
 
+from django.http import JsonResponse
+
+def api_root_with_base_url(request):
+    base_url = get_base_url()
+    return JsonResponse({
+        "api_base": f"{base_url}/api/",
+        "users": f"{base_url}/api/users/",
+        "teams": f"{base_url}/api/teams/",
+        "activities": f"{base_url}/api/activities/",
+        "workouts": f"{base_url}/api/workouts/",
+        "leaderboards": f"{base_url}/api/leaderboards/"
+    })
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', views.api_root, name='api-root'),
+    path('api/', api_root_with_base_url, name='api-root'),
     path('api/', include(router.urls)),
-    path('', views.api_root),
+    path('', api_root_with_base_url),
 ]
